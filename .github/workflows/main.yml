@@ -1,0 +1,232 @@
+import sqlite3
+import hashlib
+from datetime import datetime
+
+# Function to create tables if they don't exist
+def create_tables(cursor):
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS User (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            first_name TEXT,
+            last_name TEXT,
+            date_of_birth DATE
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Movie (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            release_year INTEGER NOT NULL,
+            genre TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Review (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            movie_id INTEGER,
+            rating REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES User (id),
+            FOREIGN KEY (movie_id) REFERENCES Movie (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Actor (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            stage_name TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ActorRole (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor_id INTEGER,
+            movie_id INTEGER,
+            role_info TEXT,
+            FOREIGN KEY (actor_id) REFERENCES Actor (id),
+            FOREIGN KEY (movie_id) REFERENCES Movie (id)
+        )
+    ''')
+
+# Function to hash passwords
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Function to add a new user
+def add_user(cursor, email, password, first_name=None, last_name=None, date_of_birth=None):
+    hashed_password = hash_password(password)
+    cursor.execute('''
+        INSERT INTO User (email, password_hash, first_name, last_name, date_of_birth)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (email, hashed_password, first_name, last_name, date_of_birth))
+
+# Function to add a new movie
+def add_movie(cursor, title, release_year, genre):
+    cursor.execute('''
+        INSERT INTO Movie (title, release_year, genre)
+        VALUES (?, ?, ?)
+    ''', (title, release_year, genre))
+
+# Function to add a new review
+def add_review(cursor, movie_id, rating):
+    # Display available users for selection
+    cursor.execute('SELECT id, email FROM User')
+    users = cursor.fetchall()
+    print("\nAvailable Users:")
+    for user in users:
+        print(f"{user[0]}. {user[1]}")
+
+    # Get user input for user selection
+    user_id = get_user_input("\nEnter the user ID to add the review: ")
+
+    # Insert the review
+    cursor.execute('''
+        INSERT INTO Review (user_id, movie_id, rating)
+        VALUES (?, ?, ?)
+    ''', (user_id, movie_id, rating))
+
+# Function to view all ratings for a certain film
+def view_ratings_for_movie(cursor, movie_id):
+    # Existing code...
+
+# Function to calculate the mean average of all ratings for a given film
+def mean_average_rating_for_movie(cursor, movie_id):
+    # Existing code...
+
+# Function to see all ratings made by a certain user
+def view_ratings_by_user(cursor, user_id):
+    # Existing code...
+
+# Function to add an actor
+def add_actor(cursor, stage_name):
+    # Existing code...
+
+# Function to add an actor role
+def add_actor_role(cursor, actor_id, movie_id, role_info):
+    # Existing code...
+
+# Function to view all users with IDs
+def view_all_users(cursor):
+    cursor.execute('SELECT * FROM User')
+    users = cursor.fetchall()
+    print("\nAll Users:")
+    for user in users:
+        print(f"ID: {user[0]}, Email: {user[1]}, Name: {user[3]} {user[4]}, DOB: {user[5]}")
+
+# Function to view all movies with IDs
+def view_all_movies(cursor):
+    cursor.execute('SELECT * FROM Movie')
+    movies = cursor.fetchall()
+    print("\nAll Movies:")
+    for movie in movies:
+        print(f"ID: {movie[0]}, Title: {movie[1]}, Release Year: {movie[2]}, Genre: {movie[3]}")
+
+# Function to get user input for console interaction
+def get_user_input(prompt):
+    return input(prompt)
+
+# Function to display menu options
+def display_menu():
+    print("\nMenu:")
+    print("1. View all movies")
+    print("2. View all ratings for a certain film")
+    print("3. Calculate mean average rating for a given film")
+    print("4. View all ratings made by a certain user")
+    print("5. Add a new user")
+    print("6. Add a new movie")
+    print("7. Add a new review")
+    print("8. Add a new actor")
+    print("9. Add an actor role")
+    print("10. View all users")
+    print("0. Exit")
+
+# Function to handle user interaction
+def main():
+    connection = sqlite3.connect('movie_rating.db')
+    cursor = connection.cursor()
+
+    create_tables(cursor)
+
+    while True:
+        display_menu()
+        choice = get_user_input("Enter your choice (0-10): ")
+
+        if choice == '1':
+            # View all movies with IDs
+            view_all_movies(cursor)
+
+        elif choice == '2':
+            # View all ratings for a certain film
+            movie_id = get_user_input("Enter the movie ID: ")
+            view_ratings_for_movie(cursor, movie_id)
+
+        elif choice == '3':
+            # Calculate mean average rating for a given film
+            movie_id = get_user_input("Enter the movie ID: ")
+            mean_average_rating_for_movie(cursor, movie_id)
+
+        elif choice == '4':
+            # View all ratings made by a certain user
+            user_id = get_user_input("Enter the user ID: ")
+            view_ratings_by_user(cursor, user_id)
+
+        elif choice == '5':
+            # Add a new user
+            email = get_user_input("Enter email: ")
+            password = get_user_input("Enter password: ")
+            first_name = get_user_input("Enter first name (optional): ")
+            last_name = get_user_input("Enter last name (optional): ")
+            date_of_birth = get_user_input("Enter date of birth (optional): ")
+            add_user(cursor, email, password, first_name, last_name, date_of_birth)
+            connection.commit()
+
+        elif choice == '6':
+            # Add a new movie
+            title = get_user_input("Enter movie title: ")
+            release_year = get_user_input("Enter release year: ")
+            genre = get_user_input("Enter genre: ")
+            add_movie(cursor, title, release_year, genre)
+            connection.commit()
+
+        elif choice == '7':
+            # Add a new review
+            movie_id = get_user_input("Enter movie ID: ")
+            rating = get_user_input("Enter rating (0-5): ")
+            add_review(cursor, movie_id, rating)
+            connection.commit()
+
+        elif choice == '8':
+            # Add a new actor
+            stage_name = get_user_input("Enter actor's stage name: ")
+            add_actor(cursor, stage_name)
+            connection.commit()
+
+        elif choice == '9':
+                  # Add an actor role
+                  actor_id = get_user_input("Enter actor ID: ")
+                  movie_id = get_user_input("Enter movie ID: ")
+                  role_info = get_user_input("Enter role information: ")
+                  add_actor_role(cursor, actor_id, movie_id, role_info)
+                  connection.commit()
+
+        elif choice == '10':
+                  # View all users with IDs
+                view_all_users(cursor)
+
+              elif choice == '0':
+                  # Exit the program
+                  print("Exiting...")
+                  break
+
+              else:
+                  print("Invalid choice. Please enter a number between 0 and 10.")
+
+          connection.close()
+
+      if __name__ == "__main__":
+          main()
